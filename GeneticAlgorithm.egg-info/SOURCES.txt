@@ -1,0 +1,8 @@
+GeneticAlgorithm.py
+README.md
+__init__.py
+setup.py
+GeneticAlgorithm.egg-info/PKG-INFO
+GeneticAlgorithm.egg-info/SOURCES.txt
+GeneticAlgorithm.egg-info/dependency_links.txt
+GeneticAlgorithm.egg-info/top_level.txt
