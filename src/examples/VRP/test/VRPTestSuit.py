@@ -1,7 +1,7 @@
 import unittest
-from GeneticAlgorithm.examples.VRP import Van,Medio,VUC,Toco,Truck,Carreta2,Carreta3
-from GeneticAlgorithm.examples.VRP import Cargo,Vehicle
-from GeneticAlgorithm.examples.VRP import VehicleMaxVolumeExeeded,OriginNonExistentException,DestinyNonExistentException
+from ..VRP import Van,Medio,VUC,Toco,Truck,Carreta2,Carreta3
+from ..VRP import Cargo,Vehicle
+from ..VRP import VehicleMaxVolumeExeeded,OriginNonExistentException,DestinyNonExistentException
 
 class VehicleLogistics(unittest.TestCase):
 

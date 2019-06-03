@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import GeneticAlgorithm
-from DataProcessing import binary_ops
+from ..utils import binary_ops
 import numpy as np
 import enum
 
@@ -103,7 +103,7 @@ class Cargo(object):
             self.__destiny   = cargo_data[1]
             self.__cargo_id  = cargo_data[2]
             self.__volume    = cargo_data[3]
-            self.__max_stack = cargo_data[4]
+            # self.__max_stack = cargo_data[4]
             # self.__cubagem   = cargo_data[5]
             # self.__peso      = cargo_data[6]
             
@@ -207,8 +207,8 @@ class Vehicle(object):
             vehicle_data = np.array(vehicle_data)
 
         if type(vehicle_data) == np.ndarray:
-            self.__id = vehicle_data[0]
-            self.__location = vehicle_data[1]
+            self.__id = vehicle_data[1]
+            self.__location = vehicle_data[2]
         
 
 
