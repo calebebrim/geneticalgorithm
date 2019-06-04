@@ -12,7 +12,7 @@ setuptools.setup(
     description="Genetic Algorithm Module",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="git@gitlab.com:calebebrim/geneticalgorithm.git",
+    url="https://github.com/calebebrim/geneticalgorithm.git",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3.6",
