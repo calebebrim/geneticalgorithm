@@ -15,3 +15,12 @@ test_vrp:
 run_vrp:
 	python -m src.examples.vrp.VRP
 
+clean: 
+	rm -rf __pycache__
+	rm -rf GeneticAlgorithm.egg-info
+	rm -rf src/__pycache__
+	rm -rf src/examples/__pycache__
+	rm -rf src/examples/.system
+	rm -rf src/utils/__pycache__
+
+

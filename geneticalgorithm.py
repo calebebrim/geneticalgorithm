@@ -1,2 +1,2 @@
-from .src import GeneticAlgorithm
-from .src.utils import binary_ops
+from src.GeneticAlgorithm import GA,GAU
+from src.utils import binary_ops

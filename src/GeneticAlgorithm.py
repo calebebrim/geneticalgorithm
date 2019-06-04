@@ -161,7 +161,7 @@ class GA():
             
             Default Usage: 
             
-            from calebe import GeneticAlgorithm
+            from geneticalgorithm import GeneticAlgorithm
             
             genesize = 10
             def bitsToBytes(values):
@@ -202,15 +202,14 @@ class GA():
         self.stop_policy = stop_policy
         self.pop = None
         if(verbose):
-            print('''
-Generating Population With: 
-    - Gene Size: {}
-    - Population Size: {}
-    - Population Type: {}
-    - Generations: {}
-    - Generations for each ephoch: {}
-    - Selection Count: {}
-'''.format(gene_size, population_size, gene_type,epochs,ephoc_generations,self.selection_count))
+            print('''Generating Population With: 
+                    \r\t- Gene Size: {}
+                    \r\t- Population Size: {}
+                    \r\t- Population Type: {}
+                    \r\t- Generations: {}
+                    \r\t- Generations for each ephoch: {}
+                    \r\t- Selection Count: {}
+            '''.format(gene_size, population_size, gene_type,epochs,ephoc_generations,self.selection_count))
         
     def on_ephoc_ends(self,pop,score,statistics,best_score):
         self.history['population'].append(pop)
