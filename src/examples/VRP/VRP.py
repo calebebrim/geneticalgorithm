@@ -40,7 +40,6 @@ class LogisticException(ProhibitedExceptions):
     pass
 class LogicError(ProhibitedExceptions):
     pass
-
 class VehicleMaxVolumeExeeded(OnlyOnLowResources):
     pass 
 
@@ -462,10 +461,21 @@ class Carreta3(Vehicle):
         self._Vehicle__type_code = 6
 
 class CargoManager(object):
+    """
+    Usage:
+        manager = CargoManager(data)
     
-    def __init__(self,genome,data):
-        if len(genome) != data['genome_bit_count_routes']+data['genome_bit_count_cargo']:
-            self.listener(LogicError('Something is wrong genome_bit_count_routes+genome_bit_count_cargo must be equals genome size'))
+    Data must have: 
+        - distance_matrix
+        - vehicle_data 
+        - cargo
+
+    See: VRP.create_data_model_small()
+    """
+    
+    def __init__(self,data):
+        self.__cargo_routes = None
+        self.__movements = None
         self.__optimization_exceptions = []
         self.__data = data
         self.__vehicles = {}
@@ -474,7 +484,6 @@ class CargoManager(object):
         self.max_locations  = data['distance_matrix'].shape[0]
         self.vehicles_count   = len(data['vehicle_data'])
         self.vehicle_locations = data['vehicle_data']
-        self.movements,self.cargo_routes = genomeToValues(genome,data)
         self.vehicle_type_map = {
             0:Van,
             1:Medio,
@@ -484,13 +493,6 @@ class CargoManager(object):
             5:Carreta2,
             6:Carreta3
         }
-
-        def create_vehicle(vehicle_data):
-            return self.vehicle_type_map[vehicle_data[0]](vehicle_data)
-        self.vehicles = [create_vehicle(vehicle_data) for vid, vehicle_data in enumerate(data['vehicle_data'])]
-        for route,vehicle in zip(self.movements,self.vehicles):
-            vehicle.route = route
-
         
         self.total_only_on_low_resources_penalty=0
         self.total_prohibited_exception_penalty=0
@@ -504,7 +506,32 @@ class CargoManager(object):
         self.time_average = 0
         self.dist_average = 0
         self.moves_average = 0
-        self.evaluate()
+
+    @property
+    def movements(self):
+        return self.__movements
+    
+    def __create_vehicle(self,vehicle_data,route):
+        vehicle = self.vehicle_type_map[vehicle_data[0]](vehicle_data)
+        vehicle.route = route
+        return vehicle
+    @movements.setter
+    def movements(self,movements):
+        self.__movements = movements
+        self.vehicles = []
+        # self.vehicles = list(map(lambda vehicle_data: ,))
+        for route,vehicle_data in zip(self.__movements,self.__data['vehicle_data']):
+            self.vehicles.append(self.__create_vehicle(vehicle_data,route))
+            
+    
+    @property
+    def cargo_routes(self):
+        return self.__cargo_routes
+    
+    @cargo_routes.setter
+    def cargo_routes(self,cargo_routes):
+        self.__cargo_routes = cargo_routes
+
 
     @property
     def stopped_vehicles(self): 
@@ -690,11 +717,11 @@ def gaConfig(genomesize,data):
     # population = initpop() * np.ones((population_size,1))
 
     ga = GeneticAlgorithm.GA(genomesize,
-        population_size=100,
+        population_size=200,
         # population=initpop,
         epochs=1000,
         ephoc_generations=10,
-        selection_count=20,
+        selection_count=50,
         maximization=False,
         on_ephoc_ends=lambda genome: evaluate(genome,data)
     )
@@ -921,14 +948,19 @@ def create_data_model_cargo_stress():
 
 def fitness(genome,data,cargo_manager=None,verbose=False):
     c = 0.001
-
+    
     if cargo_manager is None:
-        manager = CargoManager(genome,data)
+        manager = CargoManager(data)
     else: 
         manager = cargo_manager
     
     
-
+    manager.movements,manager.cargo_routes = genomeToValues(genome,data)
+    manager.evaluate()
+    score = 0
+    if len(genome) != data['genome_bit_count_routes']+data['genome_bit_count_cargo']:
+        # self.listener(LogicError('Something is wrong genome_bit_count_routes+genome_bit_count_cargo must be equals genome size'))
+        score+=10**10
 
 
 
@@ -1002,7 +1034,7 @@ def fitness(genome,data,cargo_manager=None,verbose=False):
         print("Moves average:",manager.moves_average) 
 
 
-    score = 0 \
+    score = score \
         + distance_penalty \
         + time_penalty \
         + average_time_penalty \
@@ -1015,8 +1047,8 @@ def fitness(genome,data,cargo_manager=None,verbose=False):
     return score
 
 def main():
-    # data = create_data_model_small()
-    data = create_data_model_cargo_stress()
+    data = create_data_model_small()
+    # data = create_data_model_cargo_stress()
     locations  = data['distance_matrix'].shape[0]
     vehicles   = len(data['vehicle_data'])
     max_steps = data['max_steps']
@@ -1056,9 +1088,11 @@ def main():
     
 
 def evaluate(genome,data):
-    manager = CargoManager(genome,data)
-    movements = manager.movements
-    cargo_routes = manager.cargo_routes
+    manager = CargoManager(data)
+    # movements = manager.movements
+    # cargo_routes = manager.cargo_routes
+    manager.movements,manager.cargo_routes = genomeToValues(genome,data)
+    manager.evaluate()
     manager.calculateMetrics()
     
 
@@ -1079,9 +1113,9 @@ def evaluate(genome,data):
     print(manager.exceptions)
     print('==========Optimization==========')
     print("Cargo Routes:")
-    print(cargo_routes)
+    print(manager.cargo_routes)
     print("Movements:")
-    print(movements)
+    print(manager.movements)
     
     print('============Metrics=============')
     print("Total Penalty:",fitness(genome,data,cargo_manager=manager,verbose=True))

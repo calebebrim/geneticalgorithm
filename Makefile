@@ -7,6 +7,9 @@ uninstall:
 
 test: test_vrp
 
+test_vrp_cargo:
+	python -m unittest src.examples.vrp.test.VRPTestSuit
+
 test_vrp:
 	python -m unittest src.examples.vrp.test.VRPTestSuit
 run_vrp:

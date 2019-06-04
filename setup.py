@@ -1,12 +1,3 @@
-# from  .core import setup
-#
-# setup(
-#     name='GeneticAlgorithm',
-#     version='0.1dev',
-#     packages=['src'],
-#     license='',
-#     long_description=open('README.md').read(),
-# )git@gitlab.com:calebebrim/geneticalgorithm.git
 
 import setuptools
 with open("README.md", "r") as fh:
