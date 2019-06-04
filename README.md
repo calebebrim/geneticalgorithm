@@ -12,12 +12,12 @@ GAU is the defaut functions used on "GA.__init__". Only modify if you are confid
 ## Usage:
 
 To run the examples you must use python module notation: 
-python -m path.to.filename
+python -m src.path.to.filename
 
 ### Example 1 - Maximization:
     Sum 2 numbers, genetich will optimize those numbers to get highest sum.
 
-    python -m example.sum_maximization
+    python -m src.example.sum_maximization
 ### Example 2 - Minimization: 
     Sum 2 numbers, genetich will optimize those numbers to get lowest sum.
     
@@ -28,6 +28,6 @@ python -m path.to.filename
 
     I think that it should be used only when your fitness function takes too much to run.
 
-    python -m example.sum_paralel.py
+    python -m src.example.sum_paralel.py
 
     
