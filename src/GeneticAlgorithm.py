@@ -1,8 +1,9 @@
 # Author: Calebe Brim
 # Date: 02/08/18
-import numpy as np
 import math
 import time
+
+import numpy as np
 
 
 class GAU(object):
@@ -18,7 +19,7 @@ class GAU(object):
     '''
 
     @staticmethod
-    def __init_population__(gene_size, population_size, dtype=np.int, mn=-100000, mx=10000):
+    def __init_population__(gene_size, population_size, dtype=np.bool, mn=-100000, mx=10000):
         '''  
             Must prepare for other types.
             currently only suport dtype bool
@@ -29,7 +30,7 @@ class GAU(object):
                          # TODO:
                          #   enable random population generation for dtypes:
                          #
-                         #   np.float, np.doubl
+                         #   np.float, np.double
                          #
                          ]):
             raise Exception('{} dtype not supported.'.format(dtype))
@@ -38,6 +39,18 @@ class GAU(object):
             return np.random.choice([True, False], (population_size, gene_size))
         elif(dtype == np.int):
             return np.random.randint(mn, high=mx, size=(population_size, gene_size))
+
+    @staticmethod
+    def __init_population_with_mapping__(genome_size, population, dtype=np.bool):
+            population_map = {}
+            max_values = 2**genome_size
+            population = min(max(100000, max_values), population)
+            while len(population_map.keys()) < population:
+                individual = np.random.choice([True, False], (1, genome_size))
+                population_map[str(individual)] = individual
+            return np.stack(list(population_map.values())).reshape((-1, genome_size))
+
+
 
     @staticmethod
     def __mutation__(pop, mutation_prob=0.30, mn=-10000, mx=10000, dtype=np.bool):
@@ -52,22 +65,26 @@ class GAU(object):
         return pop
 
     @staticmethod
-    def __mutation__next__(pop,pop_size,mutation_prob=0.85, dtype=np.bool):
-        i = 0
-        original_pop = pop
-      
-        
-        while pop.shape[0] != pop_size:
-            selected = 1==original_pop[i % original_pop.shape[0], :]
-            selector = np.random.choice([True, False], selected.shape, p=[
+    def __mutation__next__(pop, pop_size, mutation_prob=0.25, dtype=np.bool):
+        index = 0
+        genome_size = pop.shape[1]
+        max_pop = 2**genome_size
+        pop_size = min(pop_size, max_pop)
+        population_map = {} # {str(row): row for row in pop}
+
+        while len(population_map.keys()) < pop_size:
+            genome = 1 == pop[index % pop.shape[0], :]
+            selector = np.random.choice([True, False], genome.shape, p=[
                                         mutation_prob, 1-mutation_prob])
             
-            selected[selector] = np.invert(selected[selector])
-            pop = np.concatenate((pop,[selected]),axis=0)
-        return pop
+            genome[selector] = np.invert(genome[selector])
+            population_map[str(genome)] = genome
+            # pop = np.concatenate((pop, [genome]), axis=0)
+            index += 1
+        return np.stack(list(population_map.values())).reshape((-1, genome_size))
     
     @staticmethod
-    def __selection__(pop, score, selection_count=4,maximization=False):
+    def __selection__(pop, score, selection_count=4, maximization=False):
         
         if(maximization):
             sindex = (-score).argsort()[0:selection_count]
@@ -125,6 +142,21 @@ class GAU(object):
         pop = np.concatenate(child, axis=0)
         
         return pop
+
+    @staticmethod
+    def __crossover__allan_v_method__(pop):
+        '''
+            Crossover genes information of all samples
+        '''
+        # print(pop.shape)
+
+        cross_pop = np.zeros(pop.shape, np.int)
+
+        selector = np.random.randint(0, 2, pop.shape, np.bool)
+        cross_pop[selector] = pop[selector]
+        cross_pop[np.logical_not(selector)] = pop[1-np.array(list(range(pop.shape[0]))), :][np.logical_not(selector)]
+
+        return cross_pop
         
     @staticmethod
     def __statisics__(pop, score):
@@ -138,6 +170,7 @@ class GAU(object):
         # print('Max: ', np.max(score), ' Min: ', np.min(score), ' Average: ', np.average(score))
         # print(metrics)
         return metrics
+
     @staticmethod
     def __last_unchanged__(ga,last=10):
         '''
@@ -148,36 +181,82 @@ class GAU(object):
             ga.stop_requested = True
             if ga.verbose:
                 print("Last {} bests scores keep unchanged: {}".format(last,ga.history['bests'][-1]))
-        # else:
-        #     if ga.verbose:
-                # print("Stop Policy: Last {} bests scores average: {}".format(last,average))
+
+    @staticmethod
+    def __last_unchanged_mutation_update__(ga, last=10):
+        """
+            Use the last 10 to stop the main loop
+        :param ga:
+        :param last:
+        :return:
+        """
+        average = np.average(ga.history['bests'][-last:])
+        last_best = ga.history['bests'][-1]
+        if (average == last_best) & (len(ga.history['bests'])>10):
+            ga.stop_requested = True
+            if ga.verbose:
+                print("Last {} bests scores keep unchanged: {}".format(last, ga.history['bests'][-1]))
+
+        new_prob = min(0.8, 0.25 + (0.10 * np.array(ga.history['bests'] == last_best).sum()))
+        if (new_prob != ga.mutation_prob) & ga.debug:
+            print("mutation prob: {}".format(new_prob))
+        ga.mutation_prob = new_prob
 
 class GA():
     import numpy as np
     
-    def __init__(self, gene_size, gene_type=np.bool, epochs=1000, selection_count=10, population_size=100, maximization=False, debug=False, verbose=True, ephoc_generations=100, population=GAU.__init_population__, mutation=GAU.__mutation__next__, crossover=GAU.__crossover__, selection=GAU.__selection__, statistics=GAU.__statisics__, on_ephoc_ends=None , stop_policy=GAU.__last_unchanged__):
-        ''' 
+    def __init__(self,
+                 genome_size,
+                 gene_type=np.bool,
+                 epochs=1000,
+                 selection_count=10,
+                 population_size=100,
+                 maximization=False,
+                 debug=False,
+                 verbose=True,
+                 ephoc_generations=100,
+                 population=GAU.__init_population_with_mapping__,
+                 mutation=GAU.__mutation__next__,
+                 crossover=GAU.__crossover__allan_v_method__,
+                 selection=GAU.__selection__,
+                 statistics=GAU.__statisics__,
+                 on_ephoc_ends=None,
+                 stop_policy=GAU.__last_unchanged_mutation_update__):
+        """
             Initialize Genetic Algorithm
-            
-            Default Usage: 
-            
+
+            Default Usage:
+
             from geneticalgorithm import GeneticAlgorithm
-            
+
             genesize = 10
             def bitsToBytes(values):
                 return values.dot(2**np.arange(gene.shape[1])[::-1])
-            fitness = lambda gene: sum(bitsToBytes(gene[:,:5]),bitsToBytes(gene[:,5:]))
-            
-            
-            ga = GeneticAlgorithm.GA(genesize,population_size=100)
-            best,pop,score = ga.run(fitness)
-            
+            ga_route_sort_all_fitness = lambda gene: sum(bitsToBytes(gene[:,:5]),bitsToBytes(gene[:,5:]))
 
-            
-        '''
+
+            ga = GeneticAlgorithm.GA(genesize,population_size=100)
+            best,pop,score = ga.run(ga_route_sort_all_fitness)
+        :param genome_size:
+        :param gene_type:
+        :param epochs:
+        :param selection_count:
+        :param population_size:
+        :param maximization:
+        :param debug:
+        :param verbose:
+        :param ephoc_generations:
+        :param population:
+        :param mutation:
+        :param crossover:
+        :param selection:
+        :param statistics:
+        :param on_ephoc_ends:
+        :param stop_policy:
+        """
+
         # Documentation incomplete
-        self.stop_requested = False
-        self.gene_size = gene_size
+        self.genome_size = genome_size
         self.mutation = mutation
         self.crossover = crossover
         self.selection = selection
@@ -186,22 +265,26 @@ class GA():
         self.population_size = population_size
         self.populationType = gene_type
         self.maxepochs = epochs
-        self.history = {
-            "score": [],
-            "bests":[],
-            "population": [],
-            "statistics": []
-        }
+
+
         self.debug = debug
         self.verbose = verbose
         self.maximization = maximization
-        self.best_score = 0 if maximization else 99999
         self.ephoc_generations = ephoc_generations
         self.statisics = statistics
         self.on_ephoc_ends_callback = on_ephoc_ends
         self.stop_policy = stop_policy
+
+        # resetable
         self.pop = None
-        if(verbose):
+        self.history = None
+        self.pop = None
+        self.mutation_prob = None
+        self.best_score = None
+        self.stop_requested = None
+        self.reset()
+
+        if self.verbose:
             print('''Generating Population With: 
                     \r\t- Gene Size: {}
                     \r\t- Population Size: {}
@@ -209,9 +292,22 @@ class GA():
                     \r\t- Generations: {}
                     \r\t- Generations for each ephoch: {}
                     \r\t- Selection Count: {}
-            '''.format(gene_size, population_size, gene_type,epochs,ephoc_generations,self.selection_count))
-        
-    def on_ephoc_ends(self,pop,score,statistics,best_score):
+            '''.format(genome_size, population_size, gene_type, epochs, ephoc_generations, self.selection_count))
+
+    def reset(self):
+        self.history = {
+            "score": [],
+            "bests": [],
+            "population": [],
+            "statistics": []
+        }
+        self.pop = None
+        self.mutation_prob = 0.25
+        self.best_score = -np.inf if self.maximization else np.inf
+        self.stop_requested = False
+
+
+    def on_ephoc_ends(self, pop, score, statistics, best_score):
         self.history['population'].append(pop)
         self.history['score'].append(score)
         self.history['bests'].append(best_score)
@@ -220,23 +316,25 @@ class GA():
             ephoch = len(self.history['bests'])
             print("================(Epoch: {} Generation: {})=======================".format(ephoch, ephoch*self.ephoc_generations))
             print(statistics)
-            print('Best: ',best_score)
-                
+            print('Best: ', best_score)
 
         if self.on_ephoc_ends_callback:
-            self.on_ephoc_ends_callback(self.best_pop)
+            self.on_ephoc_ends_callback(self, self.best_genome)
         
-        if self.stop_policy is not None: 
-            self.stop_policy(self)
 
-    def fitness_handler(self, pop, fitness,paralel,threads=1,multiple=True):
-        if pop.shape[1]!= self.gene_size:
-            Warning("Population genes ({}) are different from preset gene_size ({})".format(pop.shape[1], self.gene_size))
+        if self.stop_policy is not None:
+            self.stop_policy(self)
+        if self.verbose:
+            print("================(Epoch: {} Generation: {})=======================".format(ephoch, ephoch*self.ephoc_generations))
+
+    def fitness_handler(self, pop, fitness, paralel, threads=1, multiple=True):
+        if pop.shape[1] != self.genome_size:
+            Warning("Population genes ({}) are different from preset genome_size ({})".format(pop.shape[1], self.genome_size))
         if paralel:
             from concurrent.futures import ThreadPoolExecutor
 
             # def executor(individual,index,scores):
-            #     scores[index] = fitness(individual)
+            #     scores[index] = ga_route_sort_all_fitness(individual)
 
             def executor_fn(start,end):
                 return self.fitness_handler(pop[start:min(end,pop.shape[0]),:],fitness=fitness,paralel=False,multiple=multiple,threads=threads)
@@ -249,7 +347,7 @@ class GA():
                 e = []
                 step = round(pop.shape[0]/threads)
                 for p in range(0, pop.shape[0], step):
-                    e.append(executor.submit(executor_fn, p,p+step))
+                    e.append(executor.submit(executor_fn, p, p+step))
                 
                 results = tuple([e[i].result() for i in range(len(e))])
                 
@@ -276,24 +374,22 @@ class GA():
                     evaluations, samples))
         return score
 
-
-    def run_getpop(self):
-        if self.debug: self.execution_start = time.time()
+    def run_get_pop(self):
+        if self.debug:
+            self.execution_start = time.time()
         if self.pop is None:
             if(self.debug): 
                 print('Initializing Population...')
                 self.pop_init_start_time = time.time()
-            self.pop = self.population(self.gene_size, self.population_size, dtype=self.populationType)
+            self.pop = self.population(genome_size=self.genome_size, population=self.population_size, dtype=self.populationType)
             if self.debug: 
                 self.pop_init_end_time = time.time()
-                print("Take {} to init pop".format(self.pop_init_end_time-self.pop_init_start_time)) 
-        
+                print("Take {} to init pop".format(self.pop_init_end_time-self.pop_init_start_time))
     
         return self.pop
-        
 
-    def run_getscores(self):
-        pop = self.run_getpop()
+    def run_get_scores(self):
+        pop = self.run_get_pop()
         if self.debug: t = time.time()
         score = self.fitness_handler(pop,fitness=self.fitness,paralel=self.paralel,threads=self.threads,multiple=self.multiple)
         if self.debug:
@@ -301,39 +397,41 @@ class GA():
             print("Take {} to get score".format(t))
         return score
 
-    def run(self, fitness,paralel=False,threads=1,multiple=False):
+    def run(self, fitness, paralel=False, threads=1, multiple=False):
         '''
             Used to effectivelly run the genetic algorithm
 
             Usage: 
             
-                ga = GA(gene_size=1000,population_size=100,maximization=False,epochs=100)
+                ga = GA(genome_size=1000,population_size=100,maximization=False,epochs=100)
 
-                (best_pop, pop, score) = ga.run(lambda genes: sum(genes),multiple=False)
+                (best_genome, pop, score) = ga.run(lambda genes: sum(genes),multiple=False)
         '''
         self.threads = threads
         self.multiple = multiple
         self.fitness = fitness
         self.paralel = paralel
 
-        pop = self.run_getpop()
-        score = self.run_getscores()
+        pop = self.run_get_pop()
+        score = self.run_get_scores()
 
         statistics = self.statisics(pop, score)
-        pop,score = self.selection(pop, score, self.selection_count,maximization=self.maximization)
-        
-        self.best_pop, self.best_score = (pop[0], score[0])
-        
-        
+        pop, score = self.selection(pop, score, self.selection_count, maximization=self.maximization)
 
+        self.best_genome, self.best_score = (pop[0], score[0])
+        
+        
+        self.stop_requested = False
 
 
 
 
         for i in range(1,self.maxepochs+1):
-            if(self.debug):print('generation>>', i)
+
+            if self.debug:
+                print('generation>>', i)
             
-            pop = np.concatenate((pop,np.array([self.best_pop])),axis=0)
+            pop = np.concatenate((pop, np.array([self.best_genome])), axis=0)
 
             if self.debug: t = time.time()
             pop = self.crossover(pop)
@@ -341,8 +439,10 @@ class GA():
                 t = time.time() - t
                 print("Take {} to crossover: {}".format(t,pop.shape))
             # if(self.debug):print('Crossover>>', pop.shape)
-            if self.debug: t = time.time()
-            pop = self.mutation(pop, self.population_size)
+            if self.debug:
+                t = time.time()
+
+            pop = self.mutation(pop, self.population_size, mutation_prob=self.mutation_prob)
             if self.debug:
                 t = time.time() - t
                 print("Take {} to mutation {} ".format(t,pop.shape))
@@ -356,24 +456,25 @@ class GA():
                 print("Take {} to score".format(t))
 
             statistics = self.statisics(pop, score)
-            pop,score = self.selection(pop, score, selection_count=self.selection_count,maximization=self.maximization)
+            pop, score = self.selection(pop, score, selection_count=self.selection_count,maximization=self.maximization)
             
             if self.maximization:
-                if(score[0] > self.best_score):
-                    self.best_pop, self.best_score = (pop[0], score[0])
+                if score[0] > self.best_score:
+                    self.best_genome, self.best_score = (pop[0], score[0])
             else:
-                if(score[0] < self.best_score):
-                    self.best_pop, self.best_score = (pop[0], score[0])
+                if score[0] < self.best_score:
+                    self.best_genome, self.best_score = (pop[0], score[0])
 
-            if((i % self.ephoc_generations)==0): 
-                self.on_ephoc_ends(pop, score, statistics,self.best_score)
+            if (i % self.ephoc_generations)==0:
+                self.on_ephoc_ends(pop, score, statistics, self.best_score)
             
 
-            if(self.debug): print('Selection>>', pop.shape)
+            if(self.debug):
+                print('Selection>>', pop.shape)
             self.pop = pop    
             if(self.stop_requested):
                 break
-        return self.best_pop, pop, score
+        return self.best_genome, pop, score
 
     
 

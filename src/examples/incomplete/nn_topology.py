@@ -1,8 +1,7 @@
 import sys
 import numpy as np
-from ai.genetic_algorithm import GeneticAlgorithm
-from ai.data_processing.binary_ops import bitsToBytes
-from ai.data_processing.binary_ops import bitsNeededToNumber
+from src import GeneticAlgorithm
+from src.utils.binary_ops import bitsToBytes,bitsNeededToNumber
 
 import unittest
 
@@ -16,7 +15,7 @@ def neuronValue(V,W,b, x_neuron):
 
     '''
     w_s = W[:, x_neuron] > 0
-    V[x_neuron]=V[w_s].dot(W[w_s,x_neuron])+b[x_neuron]
+    V[x_neuron]= V[w_s].dot(W[w_s,x_neuron])+b[x_neuron]
     print('b:', b)
     print('x_neuron:', x_neuron)
     print('W:', W)
@@ -49,16 +48,16 @@ def main():
         # print(score)
         return score
 
-    
-
-
-    ga = GeneticAlgorithm.GA(gene_size=nbits, population_size=10,
-                             epochs=1000, maximization=True,ephoc_generations=10)
+    ga = GeneticAlgorithm.GA(genome_size=nbits,
+                             population_size=10,
+                             epochs=1000,
+                             maximization=True,
+                             ephoc_generations=10)
 
     ga.debug = False
     ga.verbose = True
 
-    best, pop, score = ga.run(fitness,multiple=True)
+    best, pop, score = ga.run(fitness, multiple=False)
     # print(score)
 
     # def evaluate(gene):

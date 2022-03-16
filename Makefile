@@ -18,3 +18,11 @@ clean:
 	rm -rf src/utils/__pycache__
 
 
+skills: 
+	python -m src.examples.skills_optimization
+
+maximization: 
+	python -m src.examples.sum_maximization
+
+minimization:
+	python -m src.examples.sum_minimization

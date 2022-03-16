@@ -1,12 +1,12 @@
 import sys
 import numpy as np
-from .. import GeneticAlgorithm
+from src import GeneticAlgorithm
+from src.utils.binary_ops import bitsNeededToNumber
 
 def main():
 
-    
-    genesize = 10
-    nbits = round(genesize/2)
+    gene_size = 2*bitsNeededToNumber(30)
+    nbits = int(round(gene_size/2))
 
     def bitsToBytes(values):
         processed = np.array(values.dot(2**np.arange(values.shape[1])[::-1]))
@@ -25,13 +25,13 @@ def main():
         bitsToBytes(np.array([[True]*5]))
     # print('DesiredValue:', expected)
 
-    ga = GeneticAlgorithm.GA(genesize, population_size=20,
-                             epochs=1000, maximization=True)
+    ga = GeneticAlgorithm.GA(gene_size, population_size=20,
+                             epochs=1000, ephoc_generations=100, maximization=True)
 
     ga.debug = False
     ga.verbose = True
 
-    best, pop, score = ga.run(fitness)
+    best, pop, score = ga.run(fitness, multiple=True)
     # print(score)
 
     def evaluate(gene):

@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from .. import GeneticAlgorithm
+from src import GeneticAlgorithm
 
 
 def main():

@@ -1,7 +1,7 @@
 import sys
 import numpy as np
-import GeneticAlgorithm
-from DataProcessing import binary_ops
+from src import GeneticAlgorithm
+from src.utils import binary_ops
 
 
 def main():
@@ -25,8 +25,8 @@ def main():
         # if score > sum(equipe_brabo):
         #     score = score - 10000
         # [1 2 1] = 
-        for n1 in range(0,len(val)-1):
-            for n2 in range(n1+1,len(val)):
+        for n1 in range(0, len(val)-1):
+            for n2 in range(n1+1, len(val)):
                 if val[n2] == val[n1]:
                     score -= 1000
 
@@ -37,8 +37,7 @@ def main():
         binary_ops.bitsToBytes(np.array([[True]*5]))
     # print('DesiredValue:', expected)
 
-    ga = GeneticAlgorithm.GA(genesize, population_size=10,
-                             epochs=1000, maximization=True)
+    ga = GeneticAlgorithm.GA(genesize, population_size=10, epochs=1000, maximization=True)
 
     ga.debug = False
     ga.verbose = True
