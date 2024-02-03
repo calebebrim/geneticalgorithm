@@ -19,14 +19,14 @@ class GAU(object):
     '''
 
     @staticmethod
-    def __init_population__(gene_size, population_size, dtype=np.bool, mn=-100000, mx=10000):
+    def __init_population__(gene_size, population_size, dtype=bool, mn=-100000, mx=10000):
         '''  
             Must prepare for other types.
             currently only suport dtype bool
         '''
 
         
-        if(dtype not in [np.bool, np.int
+        if(dtype not in [bool, int
                          # TODO:
                          #   enable random population generation for dtypes:
                          #
@@ -35,13 +35,13 @@ class GAU(object):
                          ]):
             raise Exception('{} dtype not supported.'.format(dtype))
 
-        if(dtype == np.bool):
+        if(dtype == bool):
             return np.random.choice([True, False], (population_size, gene_size))
-        elif(dtype == np.int):
+        elif(dtype == int):
             return np.random.randint(mn, high=mx, size=(population_size, gene_size))
 
     @staticmethod
-    def __init_population_with_mapping__(genome_size, population, dtype=np.bool):
+    def __init_population_with_mapping__(genome_size, population, dtype=bool):
             population_map = {}
             max_values = 2**genome_size
             population = min(max(100000, max_values), population)
@@ -53,19 +53,19 @@ class GAU(object):
 
 
     @staticmethod
-    def __mutation__(pop, mutation_prob=0.30, mn=-10000, mx=10000, dtype=np.bool):
+    def __mutation__(pop, mutation_prob=0.30, mn=-10000, mx=10000, dtype=bool):
         selector = np.random.choice([True, False], pop.shape, p=[mutation_prob, 1-mutation_prob])
         # print(selector.shape)
         # print(selector)
-        if(dtype == np.bool):
+        if(dtype == bool):
             pop[selector] = np.invert(pop[selector])
-        elif (dtype == np.int):
+        elif (dtype == int):
             pop[selector] = np.random.randint(mn, high=mx, shape=selector.sum())
 
         return pop
 
     @staticmethod
-    def __mutation__next__(pop, pop_size, mutation_prob=0.25, dtype=np.bool):
+    def __mutation__next__(pop, pop_size, mutation_prob=0.25, dtype=bool):
         index = 0
         genome_size = pop.shape[1]
         max_pop = 2**genome_size
@@ -150,9 +150,9 @@ class GAU(object):
         '''
         # print(pop.shape)
 
-        cross_pop = np.zeros(pop.shape, np.int)
+        cross_pop = np.zeros(pop.shape, int)
 
-        selector = np.random.randint(0, 2, pop.shape, np.bool)
+        selector = np.random.randint(0, 2, pop.shape, bool)
         cross_pop[selector] = pop[selector]
         cross_pop[np.logical_not(selector)] = pop[1-np.array(list(range(pop.shape[0]))), :][np.logical_not(selector)]
 
@@ -207,7 +207,7 @@ class GA():
     
     def __init__(self,
                  genome_size,
-                 gene_type=np.bool,
+                 gene_type=bool,
                  epochs=1000,
                  selection_count=10,
                  population_size=100,
