@@ -180,14 +180,7 @@ class Cargo(object):
 
 
     def printMetrics(self):
-        print("Cargo {} on {}: {}({})->{}({})  ".format(
-            self.code,
-            self.vehicle.code if self.vehicle else "None",
-            self.origin,
-            self.pickuped,
-            self.destiny,
-            self.delivered
-        ))           
+        print(f"Cargo {self.code} on {self.vehicle.code if self.vehicle else 'None'}: {self.origin}({self.pickuped})->{self.destiny}({self.delivered})  ")           
 
 class Vehicle(object):
 
@@ -255,7 +248,7 @@ class Vehicle(object):
         
         for t in self.from_to_tuples:
             if t[0]-t[1] == 0:
-                self.listener(SameLocationException("Vehicle {} are going to the same location({},{})".formate(self.code,t[0],t[1])))
+                self.listener(SameLocationException(f"Vehicle {self.code} are going to the same location({t[0]},{t[1]})"))
 
     @property
     def from_to_tuples(self):
@@ -309,12 +302,12 @@ class Vehicle(object):
             volumeIn = self.volume_to_pickup_at(start)
             volumeOut = self.volume_to_delivery_at(stop)
             if (volumeIn-volumeOut+current_volume)>self.max_volume:
-                self.listener(VehicleMaxVolumeExeeded("Max volume exedded in {} on {}({})".format(self.name,self.code,self.max_volume-volumeIn-volumeOut+current_volume))) 
+                self.listener(VehicleMaxVolumeExeeded(f"Max volume exedded in {self.name} on {self.code}({self.max_volume-volumeIn-volumeOut+current_volume})")) 
             if (volumeIn-volumeOut+current_volume)<0:
-                self.listener(LogicError("Vehicle {} negative volume.".format(self.code))) 
+                self.listener(LogicError(f"Vehicle {self.code} negative volume.")) 
 
             if (volumeOut>current_volume):
-                self.listener(LogicError("Vehicle {} are delivering more cargo volume than it have:{} out:{} ".format(self.code,current_volume,volumeOut))) 
+                self.listener(LogicError(f"Vehicle {self.code} are delivering more cargo volume than it have:{current_volume} out:{volumeOut}")) 
             current_volume+=(volumeIn-volumeOut)
             self.route_volumes.append(current_volume)
         self.total_dist= np.array(self.dists).sum()
@@ -330,7 +323,7 @@ class Vehicle(object):
             cargo.calculateMetrics(data)
         
     def printMetrics(self,distance_matrix,time_matrix):
-        move="{}".format(self.route[0])
+        move=str(self.route[0])
         
         for i,(start,stop) in enumerate(self.from_to_tuples):
             move+="-({}m3|{}km|{}h)->{}".format(self.route_volumes[i],distance_matrix[start,stop],time_matrix[start,stop],stop)
