@@ -1,7 +1,7 @@
 import sys
 import numpy as np
-import GeneticAlgorithm
-from ..utils import binary_ops
+from src import GeneticAlgorithm
+from src.utils import binary_ops
 import numpy as np
 import enum
 
@@ -723,7 +723,7 @@ def gaConfig(genomesize,data):
         ephoc_generations=10,
         selection_count=50,
         maximization=False,
-        on_ephoc_ends=lambda genome: evaluate(genome,data)
+        on_ephoc_ends=lambda _,genome: evaluate(genome,data)
     )
     
     ga.debug = False
